@@ -1,0 +1,414 @@
+* {
+    box-sizing: border-box;
+    font-family: "Tahoma", "Arial", sans-serif;
+}
+
+body {
+    margin: 0;
+    background: #1f2329;
+    color: #f2f2f2;
+}
+
+a {
+    text-decoration: none;
+}
+
+.login-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1b1f24, #2a2f36);
+}
+
+.login-container {
+    width: 100%;
+    max-width: 520px;
+    padding: 24px;
+}
+
+.login-card,
+.card,
+.section {
+    background: #2b313a;
+    border: 1px solid #3c434d;
+    border-radius: 18px;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.25);
+}
+
+.login-card {
+    padding: 32px;
+    text-align: center;
+}
+
+.school-title {
+    font-size: 30px;
+    margin: 0 0 12px;
+    color: #ffffff;
+}
+
+.system-title {
+    font-size: 22px;
+    margin: 0 0 8px;
+    color: #ff9d2f;
+}
+
+.article-title {
+    margin: 0 0 24px;
+    color: #cfcfcf;
+    font-size: 16px;
+}
+
+.login-form {
+    text-align: right;
+}
+
+label {
+    display: block;
+    margin: 14px 0 8px;
+    font-weight: bold;
+    color: #f1f1f1;
+}
+
+input,
+select,
+textarea,
+button {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid #4b5563;
+    padding: 12px 14px;
+    font-size: 15px;
+}
+
+input,
+select,
+textarea {
+    background: #1f2329;
+    color: #fff;
+}
+
+textarea {
+    resize: vertical;
+}
+
+button {
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.container {
+    width: 95%;
+    max-width: 1500px;
+    margin: 20px auto 40px;
+}
+
+.topbar {
+    background: #2b313a;
+    border-bottom: 1px solid #3c434d;
+    padding: 18px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.topbar h1 {
+    margin: 0;
+    font-size: 24px;
+}
+
+.topbar p {
+    margin: 6px 0 0;
+    color: #d4d4d4;
+}
+
+.tabs {
+    width: 95%;
+    max-width: 1500px;
+    margin: 18px auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.tab-link {
+    background: #2b313a;
+    color: #fff;
+    padding: 12px 18px;
+    border-radius: 12px;
+    border: 1px solid #3c434d;
+}
+
+.tab-link.active,
+.tab-link:hover {
+    background: #ff8c1a;
+    color: #111;
+}
+
+.section {
+    padding: 22px;
+    margin-bottom: 22px;
+}
+
+.section h2 {
+    margin-top: 0;
+    color: #ff9d2f;
+}
+
+.card {
+    padding: 20px;
+    margin-bottom: 18px;
+}
+
+.grid-1,
+.grid-2,
+.grid-3 {
+    display: grid;
+    gap: 16px;
+}
+
+.grid-1 {
+    grid-template-columns: 1fr;
+}
+
+.grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.mini-summary {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.stat-card {
+    background: #242931;
+    border: 1px solid #3c434d;
+    border-radius: 16px;
+    padding: 18px;
+    text-align: center;
+}
+
+.stat-title {
+    font-size: 15px;
+    margin-bottom: 10px;
+    color: #ddd;
+}
+
+.stat-value {
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.student-info-box {
+    background: #242931;
+    border: 1px solid #3c434d;
+    border-radius: 16px;
+    padding: 18px;
+    margin: 18px 0;
+}
+
+.student-info-box h3 {
+    margin-top: 0;
+    color: #ffb35c;
+}
+
+.action-box {
+    border-radius: 16px;
+    padding: 18px;
+    text-align: center;
+    font-size: 22px;
+    font-weight: bold;
+    margin: 18px 0;
+    border: 2px dashed #555;
+    background: #242931;
+}
+
+.button-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.btn {
+    display: inline-block;
+    width: auto;
+    min-width: 140px;
+    text-align: center;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 12px;
+    font-weight: bold;
+}
+
+.btn-primary {
+    background: #ff8c1a;
+    color: #111;
+}
+
+.btn-primary:hover {
+    background: #ffa53f;
+}
+
+.btn-secondary {
+    background: #556070;
+    color: #fff;
+}
+
+.btn-secondary:hover {
+    background: #667283;
+}
+
+.btn-danger {
+    background: #d9534f;
+    color: #fff;
+}
+
+.btn-danger:hover {
+    background: #e06460;
+}
+
+.btn-edit {
+    background: #2f89fc;
+    color: #fff;
+}
+
+.btn-edit:hover {
+    background: #4d9cff;
+}
+
+.btn-whatsapp {
+    background: #25D366;
+    color: #fff;
+}
+
+.btn-whatsapp:hover {
+    background: #31e577;
+}
+
+.disabled-link {
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+.flash {
+    padding: 14px 16px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    font-weight: bold;
+}
+
+.flash.success {
+    background: #1d5f37;
+    color: #eaffef;
+}
+
+.flash.error {
+    background: #7a2323;
+    color: #fff;
+}
+
+.table-wrap {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 900px;
+}
+
+table th,
+table td {
+    border: 1px solid #3c434d;
+    padding: 12px;
+    text-align: center;
+}
+
+table th {
+    background: #1f2329;
+    color: #ffb35c;
+}
+
+table td {
+    background: #2b313a;
+}
+
+.actions-cell {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.pill {
+    display: inline-block;
+    padding: 7px 12px;
+    border-radius: 999px;
+    font-weight: bold;
+    color: #111;
+}
+
+.level-a {
+    background: #4caf50;
+}
+
+.level-b {
+    background: #f4d03f;
+}
+
+.level-c {
+    background: #f39c12;
+}
+
+.level-d {
+    background: #e74c3c;
+    color: #fff;
+}
+
+.hint {
+    color: #d3d3d3;
+    line-height: 1.8;
+}
+
+.smart-list {
+    margin: 0;
+    padding-right: 20px;
+    line-height: 2;
+}
+
+@media (max-width: 1100px) {
+    .grid-2,
+    .grid-3,
+    .summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .button-group {
+        flex-direction: column;
+    }
+
+    .btn {
+        width: 100%;
+    }
+}
+.role-picker{margin:20px 0;padding:12px;border:1px solid #555;border-radius:12px}.role-picker .btn{display:block}.table-responsive{overflow-x:auto}.table-responsive table{width:100%;min-width:850px}.table-responsive td{padding:9px;vertical-align:top}.table-responsive form{min-width:180px}.table-responsive button{margin:3px 0}

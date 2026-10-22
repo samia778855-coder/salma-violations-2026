@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>تسجيل الدخول</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="login-page">
+
+<div class="login-container">
+    <div class="login-card">
+        <h1 class="school-title">{{ system_name }}</h1>
+        <h2 class="system-title">{{ system_subtitle }}</h2>
+        <p class="article-title">{{ system_article }}</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="role-picker"><a class="btn btn-primary" href="{{ url_for('teacher_login') }}">👩‍🏫 دخول المعلمات لتسجيل بلاغ</a><p>🔐 دخول الإدارة</p></div>
+        <form method="POST" class="login-form">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <label>اسم المستخدم</label>
+            <input type="text" name="username" required>
+
+            <label>كلمة المرور</label>
+            <input type="password" name="password" required>
+
+            <button type="submit" class="btn btn-primary">دخول</button>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>

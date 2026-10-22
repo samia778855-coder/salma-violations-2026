@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ system_subtitle }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+    <div>
+        <h1>{{ system_name }}</h1>
+        <p>{{ system_subtitle }} | {{ system_article }}</p>
+    </div>
+    <div class="topbar-actions">
+        <a href="{{ url_for('logout') }}" class="btn btn-danger">تسجيل الخروج</a>
+    </div>
+</header>
+
+<nav class="tabs admin-nav" aria-label="أقسام لوحة الإدارة">
+    <a href="#home-section" class="tab-link">🏠 الرئيسية</a>
+    <a href="#submissions-section" class="tab-link">📥 البلاغات الواردة ({{ pending_count }})</a>
+    <a href="#records-section" class="tab-link">📝 تسجيل المخالفات</a>
+    <a href="#students-section" class="tab-link">👩‍🎓 إدارة الطالبات</a>
+    <a href="#catalog-section" class="tab-link">📚 بنود المخالفات والإعدادات</a>
+    <a href="#reports-section" class="tab-link">📊 التقارير والإحصائيات</a>
+</nav>
+
+<main class="container admin-main">
+<section id="home-section" class="section admin-panel">
+  <div class="welcome-panel"><div><span class="eyebrow">لوحة الإدارة • 2026/2027</span><h2>مرحبًا بك في إدارة الانضباط السلوكي</h2><p>اختاري القسم المطلوب من القائمة العلوية. تظهر صفحة واحدة فقط في كل مرة لتسهيل المتابعة.</p></div><div class="welcome-icon">🏫</div></div>
+  <div class="summary-grid admin-stats">
+    <a class="stat-card" href="#students-section"><div class="stat-title">👩‍🎓 إجمالي الطالبات</div><div class="stat-value">{{ summary.total_students }}</div><span class="stat-hint">إدارة الطالبات ←</span></a>
+    <a class="stat-card" href="#submissions-section"><div class="stat-title">📥 بلاغات تنتظر الاعتماد</div><div class="stat-value">{{ pending_count }}</div><span class="stat-hint">مراجعة البلاغات ←</span></a>
+    <a class="stat-card" href="#reports-section"><div class="stat-title">📊 المخالفات الرسمية</div><div class="stat-value">{{ summary.total_records }}</div><span class="stat-hint">التقارير ←</span></a>
+  </div>
+  <div class="quick-actions"><h3>الوصول السريع</h3><div class="quick-grid">
+    <a href="#submissions-section">📥 <strong>بلاغات المعلمات</strong><small>اعتماد • رفض • واتساب</small></a>
+    <a href="#records-section">📝 <strong>تسجيل مخالفة</strong><small>إدخال إداري مباشر</small></a>
+    <a href="#students-section">👩‍🎓 <strong>الطالبات</strong><small>بحث • تعديل • استيراد</small></a>
+    <a href="#catalog-section">📚 <strong>البنود والإعدادات</strong><small>المادة 39 • التصعيد</small></a>
+    <a href="#reports-section">📊 <strong>التقارير</strong><small>إحصائيات • Excel</small></a>
+  </div></div>
+</section>
+<section id="submissions-section" class="section admin-panel">
+<h2>📥 بلاغات المعلمات الواردة — قيد المراجعة: {{ pending_count }}</h2>
+<div class="table-responsive"><table><thead><tr><th>التاريخ</th><th>المعلمة</th><th>الطالبة</th><th>الصف</th><th>المخالفة</th><th>الوصف</th><th>الحالة / القرار</th></tr></thead><tbody>
+{% for item in submissions %}<tr><td>{{ item.created_at }}</td><td>{{ item.teacher_name }}</td><td>{{ item.student_name }}</td><td>{{ item.class_name }}</td><td>{{ item.violation_title }}</td><td>{{ item.note or '—' }}</td><td>
+{% if item.status == 'pending' %}
+<form method="POST" action="{{ url_for('review_submission',submission_id=item.id) }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+<input name="admin_note" placeholder="ملاحظة الإدارة (اختيارية)">
+<button class="btn btn-primary" name="decision" value="approved" type="submit" onclick="return confirm('اعتماد المخالفة في السجل الرسمي؟')">✅ اعتماد</button>
+<button class="btn" name="decision" value="returned" type="submit">↩️ إرجاع للاستكمال</button>
+<button class="btn btn-danger" name="decision" value="rejected" type="submit" onclick="return confirm('رفض البلاغ؟')">❌ رفض</button>
+</form>
+{% else %}{{ {'approved':'معتمد','rejected':'مرفوض','returned':'معاد للاستكمال'}.get(item.status,item.status) }}{% if item.admin_note %}<br>{{ item.admin_note }}{% endif %}
+{% if item.status == 'approved' %}
+{% set links = submission_messages.get(item.id, {}) %}
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+{% if links.get('father') %}<a class="btn btn-whatsapp wa-parent" href="{{ links.father }}" target="_blank" rel="noopener noreferrer">🟢 واتساب الأب</a>{% else %}<span style="font-size:12px">لا يتوفر رابط واتساب للأب لهذا البلاغ</span>{% endif %}
+{% if links.get('mother') %}<a class="btn btn-whatsapp wa-parent" href="{{ links.mother }}" target="_blank" rel="noopener noreferrer">🟢 واتساب الأم</a>{% else %}<span style="font-size:12px">لا يتوفر رابط واتساب للأم لهذا البلاغ</span>{% endif %}
+</div>
+{% endif %}{% endif %}
+</td></tr>{% else %}<tr><td colspan="7">لا توجد بلاغات حتى الآن</td></tr>{% endfor %}
+</tbody></table></div></section>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <section class="section admin-flashes">
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            </section>
+        {% endif %}
+    {% endwith %}
+
+    <!-- القسم الأول -->
+    <section id="records-section" class="section admin-panel">
+        <h2>🟠 تسجيل المخالفات</h2>
+
+        <div class="summary-grid mini-summary">
+            <div class="stat-card">
+                <div class="stat-title">إجمالي الطالبات</div>
+                <div class="stat-value">{{ summary.total_students }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">إجمالي السجلات</div>
+                <div class="stat-value">{{ summary.total_records }}</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <form id="recordForm" method="POST" action="{{ url_for('record_save') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <div class="grid-2">
+                    <div>
+                        <label>1) البحث عن الطالبة</label>
+                        <input type="text" id="studentSearch" placeholder="اكتبي اسم الطالبة للبحث...">
+                    </div>
+                    <div>
+                        <label>2) اختيار الطالبة ({{ summary.total_students }} طالبة)</label>
+                        <select name="student_id" id="studentSelect" required>
+                            <option value="">-- اختاري الطالبة --</option>
+                            {% for s in students %}
+                                <option value="{{ s.id }}">{{ s.student_name }}{% if s.class_name %} - {{ s.class_name }}{% endif %}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid-1">
+                    <div>
+                        <label>3) اختيار نوع المخالفة</label>
+                        <select name="violation_id" id="violationSelect" required>
+                            <option value="">-- اختاري المخالفة --</option>
+                            {% for v in violations %}
+                                {% if v.is_active == 1 %}
+                                    <option value="{{ v.id }}">
+                                        {{ v.title }} ({{ level_labels[v.base_level] }})
+                                    </option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="student-info-box">
+                    <h3>بيانات الطالبة</h3>
+                    <div class="grid-3">
+                        <div><strong>اسم الطالبة:</strong> <span id="info_student_name">-</span></div>
+                        <div><strong>الصف:</strong> <span id="info_class_name">-</span></div>
+                        <div><strong>ولي الأمر:</strong> <span id="info_father_name">-</span></div>
+                        <div><strong>رقم ولي الأمر:</strong> <span id="info_father_phone">-</span></div>
+                        <div><strong>اسم الأم:</strong> <span id="info_mother_name">-</span></div>
+                        <div><strong>رقم الأم:</strong> <span id="info_mother_phone">-</span></div>
+                        <div><strong>المنطقة السكنية:</strong> <span id="info_area">-</span></div>
+                        <div><strong>عدد مرات التكرار السابقة لنفس البند:</strong> <span id="info_previous_count">0</span></div>
+                    </div>
+                </div>
+
+                <div class="action-box" id="actionBox">
+                    الإجراء التلقائي سيظهر هنا
+                </div>
+
+                <div class="grid-1">
+                    <div>
+                        <label>4) ملاحظة (اختياري)</label>
+                        <textarea name="note" id="noteInput" rows="3" placeholder="اكتبي ملاحظة إن وجدت..."></textarea>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <a href="#" id="motherWhatsappBtn" class="btn btn-whatsapp disabled-link" target="_blank">إرسال واتساب للأم</a>
+                    <a href="#" id="fatherWhatsappBtn" class="btn btn-whatsapp disabled-link" target="_blank">إرسال واتساب لولي الأمر</a>
+                    <button type="submit" class="btn btn-primary">حفظ السجل</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- القسم الثاني -->
+    <section id="students-section" class="section admin-panel">
+        <h2>🟠 إدارة بيانات الطالبات</h2>
+
+        <div class="grid-2">
+            <div class="card">
+                <h3>إضافة / تعديل طالبة</h3>
+                <form method="POST" action="{{ url_for('student_save') }}" id="studentForm">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="student_id" id="student_id">
+
+                    <label>اسم الطالبة</label>
+                    <input type="text" name="student_name" id="student_name" required>
+
+                    <label>الصف</label>
+                    <input type="text" name="class_name" id="class_name" placeholder="مثال: تاسع 3">
+
+                    <label>اسم ولي الأمر</label>
+                    <input type="text" name="father_name" id="father_name">
+
+                    <label>رقم ولي الأمر</label>
+                    <input type="text" name="father_phone" id="father_phone">
+
+                    <label>اسم الأم</label>
+                    <input type="text" name="mother_name" id="mother_name">
+
+                    <label>رقم الأم</label>
+                    <input type="text" name="mother_phone" id="mother_phone">
+
+                    <label>المنطقة السكنية</label>
+                    <input type="text" name="area" id="area">
+
+                    <div class="button-group">
+                        <button type="submit" class="btn btn-primary">حفظ</button>
+                        <button type="button" class="btn btn-secondary" onclick="resetStudentForm()">تفريغ</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="card">
+                <h3>استيراد ملف Excel</h3>
+                <p class="hint">
+                    الأعمدة المعتمدة:
+                    الصف / اسم الطالبه الثلاثي مع القبيلة / الاسم الثلاثي ولي الامر / رقم هاتف ولي الامر /
+                    الاسم الثلاثي للأم / رقم هاتف الأم / المنطقة السكنيه
+                </p>
+                <form method="POST" action="{{ url_for('students_import') }}" enctype="multipart/form-data">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="file" name="excel_file" accept=".xlsx" required>
+                    <button type="submit" class="btn btn-primary">استيراد Excel</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>جدول الطالبات ({{ summary.total_students }})</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>اسم الطالبة</th>
+                            <th>الصف</th>
+                            <th>اسم ولي الأمر</th>
+                            <th>رقم ولي الأمر</th>
+                            <th>اسم الأم</th>
+                            <th>رقم الأم</th>
+                            <th>المنطقة</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in students %}
+                        <tr>
+                            <td>{{ s.student_name }}</td>
+                            <td>{{ s.class_name or '-' }}</td>
+                            <td>{{ s.father_name or '-' }}</td>
+                            <td>{{ s.father_phone or '-' }}</td>
+                            <td>{{ s.mother_name or '-' }}</td>
+                            <td>{{ s.mother_phone or '-' }}</td>
+                            <td>{{ s.area or '-' }}</td>
+                            <td class="actions-cell">
+                                <button type="button" class="btn btn-edit"
+                                    onclick='editStudent({
+                                        "id":"{{ s.id }}",
+                                        "student_name":"{{ (s.student_name or "")|e }}",
+                                        "class_name":"{{ (s.class_name or "")|e }}",
+                                        "father_name":"{{ (s.father_name or "")|e }}",
+                                        "father_phone":"{{ (s.father_phone or "")|e }}",
+                                        "mother_name":"{{ (s.mother_name or "")|e }}",
+                                        "mother_phone":"{{ (s.mother_phone or "")|e }}",
+                                        "area":"{{ (s.area or "")|e }}"
+                                    })'>
+                                    ✏ تعديل
+                                </button>
+
+                                <form method="POST" action="{{ url_for('student_delete', student_id=s.id) }}" onsubmit="return confirm('هل تريدين حذف هذه الطالبة؟')">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                    <button type="submit" class="btn btn-danger">🗑 حذف</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- القسم الثالث -->
+    <section id="catalog-section" class="section admin-panel">
+        <h2>🟠 إدارة بنود المادة (39)</h2>
+
+        <div class="grid-2">
+            <div class="card">
+                <h3>إضافة / تعديل بند</h3>
+                <form method="POST" action="{{ url_for('catalog_save') }}" id="catalogForm">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="violation_id" id="violation_id">
+
+                    <label>اسم البند</label>
+                    <input type="text" name="title" id="violation_title" required>
+
+                    <label>المستوى</label>
+                    <select name="base_level" id="base_level" required>
+                        <option value="A">A - نصح</option>
+                        <option value="B">B - تنبيه</option>
+                        <option value="C">C - إنذار</option>
+                        <option value="D">D - فصل</option>
+                    </select>
+
+                    <div class="button-group">
+                        <button type="submit" class="btn btn-primary">حفظ</button>
+                        <button type="button" class="btn btn-secondary" onclick="resetCatalogForm()">تفريغ</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="card">
+                <h3>إعدادات التصعيد</h3>
+                <form method="POST" action="{{ url_for('settings_save') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    {% set settings_map = {} %}
+                    {% for st in settings %}
+                        {% set _ = settings_map.update({st.source_level ~ '_' ~ st.target_level: st.threshold}) %}
+                    {% endfor %}
+
+                    <label>A ➜ C عند</label>
+                    <input type="number" min="1" name="a_to_c" value="{{ settings_map.get('A_C', 3) }}" required>
+
+                    <label>A ➜ D عند</label>
+                    <input type="number" min="1" name="a_to_d" value="{{ settings_map.get('A_D', 5) }}" required>
+
+                    <label>B ➜ C عند</label>
+                    <input type="number" min="1" name="b_to_c" value="{{ settings_map.get('B_C', 2) }}" required>
+
+                    <label>B ➜ D عند</label>
+                    <input type="number" min="1" name="b_to_d" value="{{ settings_map.get('B_D', 4) }}" required>
+
+                    <label>C ➜ D عند</label>
+                    <input type="number" min="1" name="c_to_d" value="{{ settings_map.get('C_D', 3) }}" required>
+
+                    <button type="submit" class="btn btn-primary">حفظ الإعدادات</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>قائمة البنود</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>اسم البند</th>
+                            <th>المستوى</th>
+                            <th>الحالة</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for v in violations %}
+                        <tr>
+                            <td>{{ v.title }}</td>
+                            <td>
+                                <span class="pill {{ level_classes[v.base_level] }}">
+                                    {{ level_labels[v.base_level] }}
+                                </span>
+                            </td>
+                            <td>{{ "مفعل" if v.is_active == 1 else "موقف" }}</td>
+                            <td class="actions-cell">
+                                <button type="button" class="btn btn-edit"
+                                    onclick='editCatalog({
+                                        "id":"{{ v.id }}",
+                                        "title":"{{ (v.title or "")|e }}",
+                                        "base_level":"{{ v.base_level }}"
+                                    })'>
+                                    ✏ تعديل
+                                </button>
+
+                                <form method="POST" action="{{ url_for('catalog_toggle', violation_id=v.id) }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                    <button type="submit" class="btn btn-secondary">
+                                        {{ "⛔ إيقاف" if v.is_active == 1 else "✅ تفعيل" }}
+                                    </button>
+                                </form>
+
+                                <form method="POST" action="{{ url_for('catalog_delete', violation_id=v.id) }}" onsubmit="return confirm('هل تريدين حذف هذا البند؟')">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                    <button type="submit" class="btn btn-danger">🗑 حذف</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- القسم الرابع -->
+    <section id="reports-section" class="section admin-panel">
+        <h2>🟠 التقارير والإحصائيات</h2>
+
+        <div class="summary-grid">
+            <div class="stat-card">
+                <div class="stat-title">إجمالي المخالفات</div>
+                <div class="stat-value">{{ summary.total_records }}</div>
+            </div>
+            <div class="stat-card level-a">
+                <div class="stat-title">🟢 إجمالي نصح</div>
+                <div class="stat-value">{{ summary.a_count }}</div>
+            </div>
+            <div class="stat-card level-b">
+                <div class="stat-title">🟡 إجمالي تنبيه</div>
+                <div class="stat-value">{{ summary.b_count }}</div>
+            </div>
+            <div class="stat-card level-c">
+                <div class="stat-title">🟠 إجمالي إنذار</div>
+                <div class="stat-value">{{ summary.c_count }}</div>
+            </div>
+            <div class="stat-card level-d">
+                <div class="stat-title">🔴 إجمالي فصل</div>
+                <div class="stat-value">{{ summary.d_count }}</div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <h3>تقارير ذكية</h3>
+                <ul class="smart-list">
+                    <li><strong>أكثر بند تكرارًا:</strong> {{ top_violation.title if top_violation else "-" }}</li>
+                    <li><strong>أكثر صف مخالفات:</strong> {{ top_class.class_name if top_class else "-" }}</li>
+                    <li><strong>الصف الأقل مخالفات:</strong> {{ low_class.class_name if low_class else "-" }}</li>
+                    <li><strong>أكثر طالبة تكرارًا:</strong> {{ top_student.student_name if top_student else "-" }}</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h3>تنزيل Excel</h3>
+                <form method="GET" action="{{ url_for('export_excel') }}" class="grid-1">
+                    <label>حسب الصف</label>
+                    <input type="text" name="class_name" placeholder="مثال: تاسع 3">
+
+                    <label>حسب الشهر</label>
+                    <input type="month" name="month">
+
+                    <label>حسب السنة</label>
+                    <input type="number" name="year" min="2020" max="2100" placeholder="2026">
+
+                    <button type="submit" class="btn btn-primary">تنزيل Excel</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="grid-3">
+            <div class="card"><canvas id="barChart"></canvas></div>
+            <div class="card"><canvas id="pieChart"></canvas></div>
+            <div class="card"><canvas id="lineChart"></canvas></div>
+        </div>
+
+        <div class="card">
+            <h3>جدول السجلات</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>التاريخ + الوقت</th>
+                            <th>اسم الطالبة</th>
+                            <th>الصف</th>
+                            <th>نوع المخالفة</th>
+                            <th>المستوى الناتج</th>
+                            <th>ملاحظة</th>
+                            <th>📱 إشعار ولي الأمر</th>
+                            <th>حذف</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in records %}
+                        <tr>
+                            <td>{{ r.created_at }}</td>
+                            <td>{{ r.student_name }}</td>
+                            <td>{{ r.class_name or '-' }}</td>
+                            <td>{{ r.violation_title }}</td>
+                            <td>
+                                <span class="pill {{ level_classes[r.result_level] }}">
+                                    {{ level_labels[r.result_level] }}
+                                </span>
+                            </td>
+                            <td>{{ r.note or '-' }}</td>
+                            <td>
+                                {% set links = record_messages.get(r.id, {}) %}
+                                <div class="record-whatsapp-actions">
+                                    {% if links.get('father') %}
+                                        <a class="btn btn-whatsapp" href="{{ links.father }}" target="_blank" rel="noopener noreferrer" aria-label="فتح رسالة واتساب للأب للمراجعة">📱 واتساب الأب</a>
+                                    {% else %}
+                                        <span class="wa-unavailable" title="رقم الأب غير متوفر">الأب: لا يوجد رقم</span>
+                                    {% endif %}
+                                    {% if links.get('mother') %}
+                                        <a class="btn btn-whatsapp" href="{{ links.mother }}" target="_blank" rel="noopener noreferrer" aria-label="فتح رسالة واتساب للأم للمراجعة">📱 واتساب الأم</a>
+                                    {% else %}
+                                        <span class="wa-unavailable" title="رقم الأم غير متوفر">الأم: لا يوجد رقم</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <form method="POST" action="{{ url_for('record_delete', record_id=r.id) }}" onsubmit="return confirm('هل تريدين حذف السجل؟')">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                    <button type="submit" class="btn btn-danger">🗑 حذف</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<style>
+/* لوحة إدارة أنيقة - أقسام منفصلة مع دعم العربية */
+.record-whatsapp-actions {display:flex;gap:7px;flex-wrap:wrap;min-width:190px}
+.record-whatsapp-actions .btn {white-space:nowrap;font-size:12px;padding:7px 9px}
+.wa-unavailable {display:inline-block;color:#777;font-size:12px;padding:7px 5px}
+body {background:#f5f6fb}
+.admin-nav {display:flex;gap:9px;flex-wrap:wrap;align-items:center;padding:13px 18px;background:#fff;box-shadow:0 5px 20px #28345c12;position:sticky;top:0;z-index:30}
+.admin-nav .tab-link {display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 17px;border-radius:12px;text-decoration:none;background:#f2f0f9;color:#3f3569;font-weight:700;transition:.18s ease;border:1px solid transparent}
+.admin-nav .tab-link:hover {background:#e9e1fb;transform:translateY(-1px)}
+.admin-nav .tab-link.active {background:linear-gradient(120deg,#4b3b83,#7360b2);color:#fff;box-shadow:0 5px 14px #50418335}
+.admin-main {max-width:1500px;margin:20px auto;padding:0 18px 30px}
+.admin-main .admin-panel {display:none!important;animation:panelIn .2s ease both}
+.admin-main .admin-panel.panel-active {display:block!important}
+.admin-main .admin-flashes {display:block!important}
+@keyframes panelIn {from{opacity:.3;transform:translateY(6px)}to{opacity:1;transform:none}}
+.welcome-panel {display:flex;justify-content:space-between;align-items:center;gap:18px;background:linear-gradient(120deg,#41316f,#7460ac);border-radius:20px;color:white;padding:28px 30px;margin-bottom:20px}
+.welcome-panel h2 {color:white;margin:8px 0 10px;font-size:clamp(20px,3vw,29px)}
+.welcome-panel p {margin:0;color:#f1eafb}
+.eyebrow {font-size:13px;color:#e3d9ff}
+.welcome-icon {font-size:58px}
+.admin-stats {margin:18px 0}
+.admin-stats .stat-card {text-decoration:none;display:block;border-radius:16px;background:white;border:1px solid #ece8f7;box-shadow:0 5px 18px #3e316c10}
+.stat-hint {display:block;font-size:12px;color:#65559a;margin-top:10px}
+.quick-actions {background:#fff;padding:22px;border-radius:18px;border:1px solid #ebe7f5}
+.quick-actions h3 {margin:0 0 18px}
+.quick-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.quick-grid a {display:flex;flex-direction:column;gap:8px;text-decoration:none;background:#f7f5fc;border:1px solid #e8e2f5;padding:17px;border-radius:14px;color:#473574;font-size:22px}
+.quick-grid a:hover {background:#eee7fb}
+.quick-grid strong {font-size:15px}.quick-grid small {font-size:12px;color:#756b8b}
+.admin-panel>h2 {margin:0 0 18px;padding:16px 20px;border-radius:15px;background:#fff;border-right:5px solid #7962b6;color:#382c67}
+.admin-panel .card {border-radius:15px}
+.wa-parent,.admin-panel .btn-whatsapp {background:#168b55!important;color:#fff!important;border:0!important;display:inline-flex;align-items:center;gap:6px;text-decoration:none;border-radius:10px;padding:9px 13px;font-weight:700}
+.wa-parent:hover,.admin-panel .btn-whatsapp:hover {background:#0d6e42!important}
+.admin-panel .table-responsive,.admin-panel .table-wrap {overflow-x:auto}
+.admin-panel table {width:100%}
+.admin-panel table td {vertical-align:top}
+@media(max-width:700px){.admin-nav {position:static;padding:10px;gap:7px}.admin-nav .tab-link {flex:1 1 45%;font-size:13px;padding:10px 6px}.welcome-panel {padding:20px}.welcome-icon {display:none}.admin-main{padding:0 10px}}
+</style>
+<script>
+(function(){
+ const panels=[...document.querySelectorAll('main .admin-panel[id]')];
+ const tabs=[...document.querySelectorAll('.admin-nav a[href^="#"]')];
+ const ids=new Set(panels.map(x=>x.id));
+ function activate(){
+   const wanted=decodeURIComponent(location.hash.slice(1));
+   const current=ids.has(wanted)?wanted:'home-section';
+   panels.forEach(p=>p.classList.toggle('panel-active',p.id===current));
+   tabs.forEach(t=>{const active=t.getAttribute('href')==='#'+current;t.classList.toggle('active',active);if(active)t.setAttribute('aria-current','page');else t.removeAttribute('aria-current')});
+   window.scrollTo({top:0,behavior:'instant'});
+ }
+ window.addEventListener('hashchange',activate);
+ document.addEventListener('DOMContentLoaded',activate);
+ activate();
+})();
+</script>
+<script>
+    const levelLabels = {{ level_labels|tojson }};
+    const byLevel = {{ by_level|map(attribute='c')|list|tojson }};
+    const levelKeys = {{ by_level|map(attribute='result_level')|list|tojson }};
+
+    const violationNames = {{ by_violation|map(attribute='title')|list|tojson }};
+    const violationCounts = {{ by_violation|map(attribute='c')|list|tojson }};
+
+    const months = {{ monthly|map(attribute='month')|list|tojson }};
+    const monthlyCounts = {{ monthly|map(attribute='c')|list|tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+</body>
+</html>
