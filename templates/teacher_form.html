@@ -1,1 +1,207 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>رصد مخالفة</title><link rel="stylesheet" href="{{url_for('static',filename='css/style.css')}}"></head><body><header class="topbar"><div><h1>{{system_name}}</h1><p>{{system_subtitle}} — بوابة المعلمات</p></div><a class="btn btn-danger" href="{{url_for('teacher_logout')}}">خروج</a></header><main class="container"><section class="section"><h2>📝 إرسال بلاغ مخالفة للإدارة</h2><p>لا يُحتسب البلاغ مخالفة رسمية إلا بعد مراجعة الإدارة واعتماده.</p>{% with msgs=get_flashed_messages(with_categories=true) %}{% for cat,msg in msgs %}<div class="flash {{cat}}">{{msg}}</div>{% endfor %}{% endwith %}<form method="post" action="{{url_for('teacher_submit')}}"><input type="hidden" name="csrf_token" value="{{csrf_token}}"><label>اسم المعلمة</label><input name="teacher_name" required maxlength="150" placeholder="اسم المعلمة"><label>الصف / الشعبة</label><select id="classFilter"><option value="">كل الصفوف</option>{% for c in classes %}<option value="{{c}}">{{c}}</option>{% endfor %}</select><label>ابحثي عن الطالبة</label><input id="searchStudent" placeholder="اكتبي جزءًا من الاسم" autocomplete="off"><label>اسم الطالبة</label><select id="studentSelect" name="student_id" required><option value="">اختاري الطالبة</option>{% for st in students %}<option value="{{st.id}}" data-class="{{st.class_name}}">{{st.student_name}} — {{st.class_name}}</option>{% endfor %}</select><label>نوع المخالفة</label><select name="violation_id" required><option value="">اختاري البند</option>{% for v in violations %}<option value="{{v.id}}">{{v.title}} ({{level_labels[v.base_level]}})</option>{% endfor %}</select><label>وصف المخالفة (اختياري)</label><textarea name="note" maxlength="2000" rows="3"></textarea><button type="submit" class="btn btn-primary" onclick="return confirm('إرسال البلاغ لإدارة المدرسة؟')">📨 إرسال للإدارة</button></form></section></main><script>const cl=document.getElementById('classFilter'),q=document.getElementById('searchStudent'),sel=document.getElementById('studentSelect');function filt(){const cls=cl.value,txt=q.value.trim().toLowerCase();for(const o of sel.options){if(!o.value)continue;o.hidden=!!((cls&&o.dataset.class!==cls)||(txt&&!o.textContent.toLowerCase().includes(txt)));}if(sel.selectedOptions[0]?.hidden)sel.value='';}cl.addEventListener('change',filt);q.addEventListener('input',filt);</script></body></html>
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>رصد مخالفة</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    /* إضافات خاصة ببوابة المعلمات، لا تؤثر على بقية صفحات النظام. */
+    .teacher-form { max-width: 780px; margin-inline: auto; }
+    .teacher-form input, .teacher-form select, .teacher-form textarea {
+      width: 100%; min-height: 48px; font-size: 16px;
+    }
+    .teacher-form select option { background: #fff; color: #171717; }
+    .student-quick-panel { margin: 12px 0 16px; }
+    .student-quick-list {
+      display: grid; grid-template-columns: 1fr; gap: 8px;
+      max-height: 310px; overflow-y: auto; overscroll-behavior: contain;
+      padding: 8px; border: 1px solid #64748b; border-radius: 12px;
+      background: #f8fafc; color: #111827;
+      -webkit-overflow-scrolling: touch;
+    }
+    .student-quick-item {
+      display: block; width: 100%; min-width: 0; text-align: right;
+      border: 1px solid #cbd5e1; border-radius: 10px;
+      background: #fff; color: #111827; padding: 12px 14px;
+      font: inherit; font-size: 16px; line-height: 1.6;
+      cursor: pointer; overflow-wrap: anywhere;
+    }
+    .student-quick-item:hover, .student-quick-item:focus-visible {
+      border-color: #f59e0b; outline: 2px solid #f59e0b;
+    }
+    .student-quick-item[aria-pressed="true"] {
+      background: #ffedd5; border: 2px solid #ea580c; font-weight: bold;
+    }
+    .student-status { margin: 8px 0; color: #f1f5f9; line-height: 1.7; }
+    .selected-student {
+      background: #174a32; color: #fff; border: 1px solid #4ade80;
+      padding: 12px; border-radius: 10px; margin: 10px 0;
+    }
+    .teacher-form .submit-btn { margin-top: 20px; min-height: 52px; font-size: 17px; }
+    @media (max-width: 600px) {
+      .teacher-form { padding: 16px; }
+      .student-quick-list { max-height: 290px; }
+      .student-quick-item { min-height: 48px; }
+    }
+  </style>
+</head>
+<body>
+<header class="topbar">
+  <div>
+    <h1>{{ system_name }}</h1>
+    <p>{{ system_subtitle }} — بوابة المعلمات</p>
+  </div>
+  <a class="btn btn-danger" href="{{ url_for('teacher_logout') }}">خروج</a>
+</header>
+<main class="container">
+  <section class="section teacher-form">
+    <h2>📝 إرسال بلاغ مخالفة للإدارة</h2>
+    <p>لا يُحتسب البلاغ مخالفة رسمية إلا بعد مراجعة الإدارة واعتماده.</p>
+    {% with msgs = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in msgs %}
+        <div class="flash {{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <form id="teacherReportForm" method="post" action="{{ url_for('teacher_submit') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label for="teacherName">اسم المعلمة</label>
+      <input id="teacherName" name="teacher_name" required maxlength="150" placeholder="اسم المعلمة" autocomplete="name">
+
+      <label for="classFilter">الصف / الشعبة</label>
+      <select id="classFilter">
+        <option value="">اختاري الصف والشعبة</option>
+        {% for c in classes %}
+          <option value="{{ c }}">{{ c }}</option>
+        {% endfor %}
+      </select>
+
+      <label for="searchStudent">بحث سريع عن الطالبة</label>
+      <input id="searchStudent" type="search" placeholder="اكتبي جزءًا من الاسم" autocomplete="off" inputmode="search">
+
+      <div class="student-quick-panel">
+        <p class="student-status" id="studentStatus" role="status" aria-live="polite">اختاري الصف والشعبة لتظهر أسماء الطالبات مباشرة.</p>
+        <div class="student-quick-list" id="studentQuickList" role="group" aria-label="أسماء الطالبات" hidden></div>
+        <div class="selected-student" id="selectedStudent" role="status" hidden></div>
+      </div>
+
+      <label for="studentSelect">اسم الطالبة (يمكن الاختيار من القائمة أيضًا)</label>
+      <select id="studentSelect" name="student_id" required>
+        <option value="">اختاري الطالبة</option>
+        {% for st in students %}
+          <option value="{{ st.id }}" data-class="{{ st.class_name }}">{{ st.student_name }} — {{ st.class_name }}</option>
+        {% endfor %}
+      </select>
+
+      <label for="violationSelect">نوع المخالفة</label>
+      <select id="violationSelect" name="violation_id" required>
+        <option value="">اختاري البند</option>
+        {% for v in violations %}
+          <option value="{{ v.id }}">{{ v.title }} ({{ level_labels[v.base_level] }})</option>
+        {% endfor %}
+      </select>
+
+      <label for="noteInput">وصف المخالفة (اختياري)</label>
+      <textarea id="noteInput" name="note" maxlength="2000" rows="3"></textarea>
+
+      <button type="submit" class="btn btn-primary submit-btn">📨 إرسال للإدارة</button>
+    </form>
+  </section>
+</main>
+<script>
+(function () {
+  'use strict';
+  const classFilter = document.getElementById('classFilter');
+  const searchInput = document.getElementById('searchStudent');
+  const select = document.getElementById('studentSelect');
+  const list = document.getElementById('studentQuickList');
+  const status = document.getElementById('studentStatus');
+  const selected = document.getElementById('selectedStudent');
+  const form = document.getElementById('teacherReportForm');
+
+  // نحتفظ بالأسماء الموجودة في الصفحة؛ لا توجد طلبات للشبكة أثناء البحث.
+  const students = Array.from(select.options).filter(o => o.value).map(o => ({
+    id: o.value,
+    className: o.dataset.class || '',
+    label: o.textContent.trim()
+  }));
+
+  function normalize(text) {
+    return String(text || '').toLowerCase()
+      .replace(/[\u064B-\u065F\u0670]/g, '')
+      .replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه')
+      .replace(/\s+/g, ' ').trim();
+  }
+
+  function showSelection() {
+    const chosen = students.find(st => st.id === select.value);
+    selected.hidden = !chosen;
+    selected.textContent = chosen ? '✓ الطالبة المختارة: ' + chosen.label : '';
+    list.querySelectorAll('button[data-student-id]').forEach(button => {
+      button.setAttribute('aria-pressed', String(button.dataset.studentId === select.value));
+    });
+  }
+
+  function render() {
+    const cls = classFilter.value;
+    const query = normalize(searchInput.value);
+    const matches = students.filter(st =>
+      (!cls || st.className === cls) && (!query || normalize(st.label).includes(query))
+    );
+    const previousValue = select.value;
+    select.replaceChildren(new Option('اختاري الطالبة', ''));
+    const optionsFragment = document.createDocumentFragment();
+    matches.forEach(st => {
+      const option = new Option(st.label, st.id);
+      option.dataset.class = st.className;
+      optionsFragment.appendChild(option);
+    });
+    select.appendChild(optionsFragment);
+    if (matches.some(st => st.id === previousValue)) select.value = previousValue;
+    else select.value = '';
+
+    list.replaceChildren();
+    const shouldShow = Boolean(cls || query);
+    list.hidden = !shouldShow || matches.length === 0;
+    if (!shouldShow) {
+      status.textContent = 'اختاري الصف والشعبة لتظهر أسماء الطالبات مباشرة.';
+    } else if (!matches.length) {
+      status.textContent = 'لا توجد أسماء مطابقة. تحققي من الصف أو الاسم.';
+    } else {
+      const limit = 80;
+      status.textContent = 'عدد الأسماء المطابقة: ' + matches.length +
+        (matches.length > limit ? ' — تظهر أول ' + limit + ' نتيجة؛ اكتبي جزءًا من الاسم لتضييق البحث.' : ' — اضغطي على اسم الطالبة لاختياره.');
+      const fragment = document.createDocumentFragment();
+      matches.slice(0, limit).forEach(st => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'student-quick-item';
+        button.textContent = st.label;
+        button.dataset.studentId = st.id;
+        button.setAttribute('aria-pressed', String(st.id === select.value));
+        fragment.appendChild(button);
+      });
+      list.appendChild(fragment);
+    }
+    showSelection();
+  }
+
+  classFilter.addEventListener('change', render);
+  searchInput.addEventListener('input', render);
+  select.addEventListener('change', showSelection);
+  list.addEventListener('click', event => {
+    const button = event.target.closest('button[data-student-id]');
+    if (!button) return;
+    select.value = button.dataset.studentId;
+    showSelection();
+  });
+  form.addEventListener('submit', event => {
+    if (!form.checkValidity()) return;
+    if (!window.confirm('إرسال البلاغ لإدارة المدرسة؟')) event.preventDefault();
+  });
+  render();
+})();
+</script>
+</body>
+</html>
