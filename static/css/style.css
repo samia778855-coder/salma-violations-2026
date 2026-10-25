@@ -412,3 +412,141 @@ table td {
     }
 }
 .role-picker{margin:20px 0;padding:12px;border:1px solid #555;border-radius:12px}.role-picker .btn{display:block}.table-responsive{overflow-x:auto}.table-responsive table{width:100%;min-width:850px}.table-responsive td{padding:9px;vertical-align:top}.table-responsive form{min-width:180px}.table-responsive button{margin:3px 0}
+
+
+/* ================================================
+   Cross-browser student selector & mobile usability
+   Append-only overrides: original visual theme kept.
+   ================================================ */
+
+/* Native option menus can otherwise inherit white text from the dark theme,
+   while the browser paints their popup with a white background. */
+select {
+    background-color: #ffffff;
+    color: #18212c;
+    border-color: #7b8796;
+    color-scheme: light;
+    max-width: 100%;
+}
+
+select option,
+select optgroup {
+    background-color: #ffffff;
+    color: #18212c;
+}
+
+select:focus,
+input:focus,
+textarea:focus {
+    outline: 2px solid #ff9d2f;
+    outline-offset: 2px;
+}
+
+/* If a page uses Select2, style both its selection and results. */
+.select2-container {
+    max-width: 100%;
+}
+.select2-container .select2-selection--single,
+.select2-container .select2-selection--multiple {
+    background: #ffffff !important;
+    color: #18212c !important;
+    border: 1px solid #7b8796 !important;
+    min-height: 46px;
+    border-radius: 12px !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__rendered,
+.select2-container--default .select2-selection--multiple .select2-selection__choice,
+.select2-results__option,
+.select2-dropdown,
+.select2-search__field {
+    color: #18212c !important;
+}
+.select2-dropdown,
+.select2-results__option {
+    background-color: #ffffff;
+}
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: #ff8c1a !important;
+    color: #111111 !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 44px;
+}
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 44px;
+}
+
+/* Responsive forms and tap targets, including iPhone and Android. */
+.grid-1 > *,
+.grid-2 > *,
+.grid-3 > *,
+.section,
+.card,
+.container {
+    min-width: 0;
+}
+input,
+select,
+textarea,
+button {
+    max-width: 100%;
+}
+
+@media (max-width: 768px) {
+    .container,
+    .tabs {
+        width: calc(100% - 24px);
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .topbar {
+        padding: 14px 12px;
+        position: static;
+    }
+    .topbar h1 {
+        font-size: 20px;
+        overflow-wrap: anywhere;
+    }
+    .section,
+    .card {
+        padding: 14px;
+    }
+    .login-container {
+        padding: 12px;
+    }
+    .login-card {
+        padding: 20px 14px;
+    }
+    .school-title {
+        font-size: 23px;
+    }
+    .system-title {
+        font-size: 19px;
+    }
+    .tabs {
+        gap: 8px;
+    }
+    .tab-link {
+        flex: 1 1 auto;
+        text-align: center;
+    }
+    .grid-2,
+    .grid-3,
+    .summary-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    input,
+    select,
+    textarea,
+    button,
+    .select2-search__field {
+        font-size: 16px; /* Prevent automatic input zoom in iOS Safari. */
+        min-height: 44px;
+    }
+    .table-wrap,
+    .table-responsive {
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
